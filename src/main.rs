@@ -37,11 +37,16 @@ static NBD_FLAG_FIXED_NEWSTYLE_CLIENT: i32 = 1;
 async fn process(mut socket: TcpStream) {
     let (r, mut w) = socket.split();
     let mut r = BufReader::new(r);
-    if let Err(err) = w.write_all("NBDMAGICIHAVEOPT".as_bytes()).await {
+    // Handshake "newstyle" Connection
+    if let Err(err) = w.write_all("NBDMAGIC".as_bytes()).await {
         eprintln!("got error while write: {err}");
         return
     }
-    if let Err(err) = w.write_all(NBD_FLAG_FIXED_NEWSTYLE.to_ne_bytes().as_slice()).await {
+    if let Err(err) = w.write_all("IHAVEOPT".as_bytes()).await {
+        eprintln!("got error while write: {err}");
+        return
+    }
+    if let Err(err) = w.write_i16(NBD_FLAG_FIXED_NEWSTYLE).await {
         eprintln!("got error while write: {err}");
         return
     }
@@ -52,6 +57,20 @@ async fn process(mut socket: TcpStream) {
             return
         }
     };
-    eprintln!("got: {client_flags}");
+    if client_flags != NBD_FLAG_FIXED_NEWSTYLE_CLIENT {
+        eprintln!("unknown client flags: {client_flags}");
+        return
+    }
+
+    // Option Negotitation
+    // let mut buffer = String::new();
+    // if let Err(err) = r.read_to_string(&mut buffer).await {
+    //     eprintln!("got error while read client flags: {err}");
+    //     return
+    // }
+    // if buffer != "IHAVEOPT" {
+    //     eprintln!("invalid IHAVEOPT");
+    //     return
+    // }
     return
 }
