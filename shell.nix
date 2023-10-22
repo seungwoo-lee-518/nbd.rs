@@ -6,5 +6,6 @@
       cargo
       rustc
       rust-analyzer
+      nbd
     ];
   }
